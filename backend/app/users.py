@@ -13,10 +13,11 @@ from fastapi_users.authentication import (
 from fastapi_users.db import SQLAlchemyUserDatabase
 from httpx_oauth.clients.google import GoogleOAuth2
 
-from app.db import User, get_user_db
+from .db import User, get_user_db
 
 SECRET = "SECRET"
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
 
 google_oauth_client = GoogleOAuth2(
     os.getenv("GOOGLE_CLIENT_ID", ""),
@@ -82,6 +83,7 @@ oauth_redirect_auth_backend = AuthenticationBackend(
     transport=oauth_redirect_transport,
     get_strategy=get_jwt_strategy,
 )
+
 
 fastapi_users = FastAPIUsers[User, uuid.UUID](get_user_manager, [auth_backend])
 

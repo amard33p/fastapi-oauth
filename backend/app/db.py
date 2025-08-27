@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from pathlib import Path
 
 from fastapi import Depends
 from fastapi_users.db import (
@@ -9,7 +10,9 @@ from fastapi_users.db import (
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, relationship
 
-DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+# Resolve DB file relative to the backend package so running from any CWD works
+DB_PATH = (Path(__file__).resolve().parent / "test.db").as_posix()
+DATABASE_URL = f"sqlite+aiosqlite:///{DB_PATH}"
 
 
 class Base(DeclarativeBase):

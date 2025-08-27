@@ -3,9 +3,9 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.db import User, create_db_and_tables
-from app.schemas import UserCreate, UserRead, UserUpdate
-from app.users import (
+from .db import User, create_db_and_tables
+from .schemas import UserCreate, UserRead, UserUpdate
+from .users import (
     SECRET,
     auth_backend,
     current_active_user,
