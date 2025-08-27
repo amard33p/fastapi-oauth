@@ -17,7 +17,7 @@ fastapi-oauth/
 │  │  ├─ schemas.py        # fastapi-users schemas used by routers
 │  │  └─ __init__.py
 │  ├─ main.py              # Uvicorn entrypoint for backend
-│  └─ requirements.txt
+│  └─ pyproject.toml       # Backend package + dependencies
 │
 ├─ frontend/
 │  ├─ src/
@@ -42,16 +42,14 @@ fastapi-oauth/
 ## Backend: Key Files and Concepts
 
 - `backend/app/users.py`
-  - Configures fastapi-users with a `JWTStrategy` and both bearer and cookie auth backends.
-  - Implements `OAuthCookieTransport` (subclass of `CookieTransport`) to set an HttpOnly cookie and then redirect the browser to the SPA after OAuth success.
-  - Provides `cookie_auth_backend` and `cookie_oauth_auth_backend` used by the app.
+  - Implements a cookie-only OAuth backend: `cookie_oauth_auth_backend` using `OAuthCookieTransport` to set an HttpOnly cookie and redirect to the SPA after OAuth success.
+  - Uses a database-backed auth strategy (`DatabaseStrategy`) so tokens are persisted and deleted on logout.
   - Exposes `google_oauth_client` (from `httpx-oauth`), the `fastapi_users` instance, and `current_active_user` dependency.
 
 - `backend/app/app.py`
   - Creates the FastAPI app and enables CORS for `http://localhost:5173`.
   - Mounts fastapi-users routers:
-    - JWT login router under `/auth/jwt` (optional, not used in this cookie flow).
-    - Cookie login/logout router under `/auth/cookie`.
+    - Cookie login/logout router under `/auth/cookie` using `cookie_oauth_auth_backend`.
     - Register, reset password, verify routers under `/auth`.
     - Users router under `/users`.
     - Google OAuth router under `/auth/google`, using `cookie_oauth_auth_backend` so the callback sets the cookie and redirects to the SPA.
@@ -59,6 +57,7 @@ fastapi-oauth/
 
 - `backend/app/db.py`
   - Defines `User` and `OAuthAccount` SQLAlchemy models compatible with fastapi-users.
+  - Defines an `AccessToken` model and adapter for storing access tokens when using the database auth strategy.
   - Uses a local SQLite DB at `backend/app/test.db` via `sqlite+aiosqlite`.
 
 
@@ -74,8 +73,8 @@ fastapi-oauth/
 - Demo protected route:
   - `GET /authenticated-route` → returns a greeting. Authenticated via the session cookie.
 
-- JWT (optional, not used by the OAuth button):
-  - `POST /auth/jwt/login` and `POST /auth/jwt/logout` are available if you later add credentials-based auth.
+- Cookie:
+  - `POST /auth/cookie/logout` → invalidates the session by deleting the corresponding token in the database.
 
 Notes:
 - CORS is configured to allow `http://localhost:5173`.
@@ -149,7 +148,7 @@ Backend (terminal 1):
 ```
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r backend/requirements.txt
+pip install -e ./backend
 export GOOGLE_CLIENT_ID=your_id
 export GOOGLE_CLIENT_SECRET=your_secret
 # optionally: export FRONTEND_URL=http://localhost:5173
@@ -197,9 +196,9 @@ npm run dev
 
 ## Troubleshooting
 
-- “Landing on backend JSON page at `/auth/google/callback`” → ensure the OAuth router uses the redirect-aware backend (we use `oauth_redirect_auth_backend` in `app.py`).
-- SPA doesn’t see the user → ensure `Authorization` header is set in `api.js` and token exists in `localStorage`.
-- 401 on protected routes → token missing or expired; re-login.
+- “Landing on backend JSON page at `/auth/google/callback`” → ensure the OAuth router uses the cookie-based backend (we use `cookie_oauth_auth_backend` with `OAuthCookieTransport` in `app.py`).
+- SPA doesn’t see the user → ensure requests use `credentials: 'include'` (see `src/api.js`) and your cookie domain/SameSite are set correctly for your environment.
+- 401 on protected routes → session cookie missing or expired; re-login.
 
 
 ## References

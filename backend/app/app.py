@@ -7,8 +7,6 @@ from .db import User, create_db_and_tables
 from .schemas import UserCreate, UserRead, UserUpdate
 from .users import (
     SECRET,
-    auth_backend,
-    cookie_auth_backend,
     cookie_oauth_auth_backend,
     current_active_user,
     fastapi_users,
@@ -35,10 +33,7 @@ app.add_middleware(
 )
 
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
-)
-app.include_router(
-    fastapi_users.get_auth_router(cookie_auth_backend),
+    fastapi_users.get_auth_router(cookie_oauth_auth_backend),
     prefix="/auth/cookie",
     tags=["auth"],
 )

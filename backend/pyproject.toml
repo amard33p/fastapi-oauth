@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "app"
+version = "0.1.0"
+description = ""
+requires-python = ">=3.10"
+authors = [
+  { name = "Your Name", email = "you@example.com" },
+]
+
+dependencies = [
+  "fastapi",
+  "fastapi-users[oauth,sqlalchemy]",
+  "uvicorn[standard]",
+  "aiosqlite",
+]
