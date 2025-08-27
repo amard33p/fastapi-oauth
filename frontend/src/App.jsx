@@ -1,16 +1,24 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Routes, Route, Link, Navigate, useLocation } from 'react-router-dom'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import OAuthCallback from './pages/OAuthCallback'
-import { getToken } from './token'
+import { getUser } from './authClient'
 
 function RequireAuth({ children }) {
-  const token = getToken()
+  const [status, setStatus] = useState('loading')
   const location = useLocation()
-  if (!token) {
-    return <Navigate to="/login" replace state={{ from: location }} />
-  }
+  useEffect(() => {
+    let mounted = true
+    getUser()
+      .then(() => mounted && setStatus('ok'))
+      .catch(() => mounted && setStatus('noauth'))
+    return () => {
+      mounted = false
+    }
+  }, [])
+  if (status === 'loading') return <div>Loading...</div>
+  if (status === 'noauth') return <Navigate to="/login" replace state={{ from: location }} />
   return children
 }
 

@@ -8,10 +8,11 @@ from .schemas import UserCreate, UserRead, UserUpdate
 from .users import (
     SECRET,
     auth_backend,
+    cookie_auth_backend,
+    cookie_oauth_auth_backend,
     current_active_user,
     fastapi_users,
     google_oauth_client,
-    oauth_redirect_auth_backend,
 )
 
 
@@ -37,6 +38,11 @@ app.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
 )
 app.include_router(
+    fastapi_users.get_auth_router(cookie_auth_backend),
+    prefix="/auth/cookie",
+    tags=["auth"],
+)
+app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
     tags=["auth"],
@@ -59,7 +65,7 @@ app.include_router(
 app.include_router(
     fastapi_users.get_oauth_router(
         google_oauth_client,
-        oauth_redirect_auth_backend,
+        cookie_oauth_auth_backend,
         SECRET,
     ),
     prefix="/auth/google",

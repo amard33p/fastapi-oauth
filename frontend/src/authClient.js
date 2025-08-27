@@ -1,5 +1,4 @@
 import { apiFetch, API_URL } from './api'
-import { getToken as _getToken, setToken as _setToken, clearToken as _clearToken } from './token'
 
 export async function loginWithGoogle() {
   const redirectUrl = `${window.location.origin}/oauth-callback`
@@ -18,7 +17,14 @@ export async function loginWithGoogle() {
 }
 
 export async function logoutUser() {
-  _clearToken()
+  try {
+    await fetch(`${API_URL}/auth/cookie/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+  } catch (_) {
+    // ignore
+  }
   window.location.assign('/login')
 }
 
@@ -26,10 +32,4 @@ export async function getUser() {
   return apiFetch('/users/me')
 }
 
-export function getToken() {
-  return _getToken()
-}
-
-export function setToken(token) {
-  return _setToken(token)
-}
+// No token utilities needed; we rely on HttpOnly cookie

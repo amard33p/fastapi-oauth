@@ -1,6 +1,6 @@
 # FastAPI + React OAuth (fastapi-users)
 
-This project demonstrates a minimal, end-to-end OAuth login with Google using FastAPI on the backend and a React + Vite SPA on the frontend. It builds on top of fastapi-users and shows how to wire a redirect-based OAuth flow to an SPA while using a JWT bearer token in the client.
+This project demonstrates a minimal, end-to-end OAuth login with Google using FastAPI on the backend and a React + Vite SPA on the frontend. It builds on top of fastapi-users and shows how to wire a redirect-based OAuth flow to an SPA using secure HttpOnly cookies (no tokens in URLs or localStorage).
 
 The goal of this README is to be explicit enough that another LLM (or developer) can recreate the project and wiring by following the descriptions below.
 
@@ -12,7 +12,7 @@ fastapi-oauth/
 ├─ backend/
 │  ├─ app/
 │  │  ├─ app.py            # FastAPI app, routers, CORS, demo protected route
-│  │  ├─ users.py          # fastapi-users setup + OAuth redirect transport
+│  │  ├─ users.py          # fastapi-users setup + cookie auth + OAuth cookie transport
 │  │  ├─ db.py             # SQLAlchemy models + async engine/session helpers
 │  │  ├─ schemas.py        # fastapi-users schemas used by routers
 │  │  └─ __init__.py
@@ -21,13 +21,12 @@ fastapi-oauth/
 │
 ├─ frontend/
 │  ├─ src/
-│  │  ├─ api.js            # API URL + fetch helper (adds Authorization header)
-│  │  ├─ token.js          # Local storage helpers for token
+│  │  ├─ api.js            # API URL + fetch helper (credentials: 'include'; no Authorization header)
 │  │  ├─ Auth.jsx          # Small widget that shows login/logout or user email
 │  │  ├─ App.jsx           # Router + RequireAuth wrapper
 │  │  └─ pages/
 │  │     ├─ Login.jsx          # “Login with Google” entrypoint
-│  │     ├─ OAuthCallback.jsx  # Handles redirect and stores token
+│  │     ├─ OAuthCallback.jsx  # Handles redirect and verifies session via cookie
 │  │     └─ Home.jsx           # Example protected page calling the API
 │  ├─ index.html
 │  ├─ package.json
@@ -43,19 +42,19 @@ fastapi-oauth/
 ## Backend: Key Files and Concepts
 
 - `backend/app/users.py`
-  - Configures fastapi-users with a `JWTStrategy` and a standard bearer `AuthenticationBackend`.
-  - Defines `RedirectBearerTransport`, a subclass of `BearerTransport` overriding `get_login_response` to return `302` and redirect back to the SPA: `FRONTEND_URL/oauth-callback?access_token=<token>`.
-  - Creates `oauth_redirect_auth_backend` using this transport.
-  - Exposes `google_oauth_client` using `httpx-oauth` and env vars.
-  - Exposes `fastapi_users` instance and `current_active_user` dependency.
+  - Configures fastapi-users with a `JWTStrategy` and both bearer and cookie auth backends.
+  - Implements `OAuthCookieTransport` (subclass of `CookieTransport`) to set an HttpOnly cookie and then redirect the browser to the SPA after OAuth success.
+  - Provides `cookie_auth_backend` and `cookie_oauth_auth_backend` used by the app.
+  - Exposes `google_oauth_client` (from `httpx-oauth`), the `fastapi_users` instance, and `current_active_user` dependency.
 
 - `backend/app/app.py`
   - Creates the FastAPI app and enables CORS for `http://localhost:5173`.
   - Mounts fastapi-users routers:
-    - JWT login router under `/auth/jwt` (not used by the Google flow, but available).
+    - JWT login router under `/auth/jwt` (optional, not used in this cookie flow).
+    - Cookie login/logout router under `/auth/cookie`.
     - Register, reset password, verify routers under `/auth`.
     - Users router under `/users`.
-    - Google OAuth router under `/auth/google`, using `oauth_redirect_auth_backend` so the callback redirects to the SPA.
+    - Google OAuth router under `/auth/google`, using `cookie_oauth_auth_backend` so the callback sets the cookie and redirects to the SPA.
   - Defines `/authenticated-route` as an example protected endpoint using `current_active_user`.
 
 - `backend/app/db.py`
@@ -66,18 +65,17 @@ fastapi-oauth/
 ## Backend: Endpoints You Need
 
 - OAuth (mounted at `/auth/google`):
-  - `GET /auth/google/authorize?redirect_url=<SPA URL>` → returns `{ "authorization_url": "…" }`. You redirect the browser to this URL.
-  - `GET /auth/google/callback?code=…&state=…` → fastapi-users exchanges the code; our custom transport responds with `302` to `FRONTEND_URL/oauth-callback?access_token=<token>`.
+  - `GET /auth/google/authorize?redirect_url=<SPA URL>` → returns `{ "authorization_url": "…" }`. The SPA redirects the browser to this URL.
+  - `GET /auth/google/callback?code=…&state=…` → backend exchanges the code with Google; `OAuthCookieTransport` sets an HttpOnly cookie and responds with `302` to `FRONTEND_URL/oauth-callback`.
 
 - Users:
-  - `GET /users/me` → returns the current user, requires `Authorization: Bearer <token>`.
+  - `GET /users/me` → returns the current user. Authenticated via the session cookie (no Authorization header).
 
 - Demo protected route:
-  - `GET /authenticated-route` → returns a greeting, requires `Authorization: Bearer <token>`.
+  - `GET /authenticated-route` → returns a greeting. Authenticated via the session cookie.
 
 - JWT (optional, not used by the OAuth button):
-  - `POST /auth/jwt/login` → password login if you later add credentials-based auth.
-  - `POST /auth/jwt/logout`
+  - `POST /auth/jwt/login` and `POST /auth/jwt/logout` are available if you later add credentials-based auth.
 
 Notes:
 - CORS is configured to allow `http://localhost:5173`.
@@ -88,30 +86,25 @@ Notes:
 
 - `src/api.js`
   - Exports `API_URL` from `import.meta.env.VITE_API_URL` (default `http://localhost:8000`).
-  - Exports `apiFetch(path, options)` that adds `Authorization: Bearer <token>` if present and `credentials: 'include'`.
-
-- `src/token.js`
-  - Manages the token in `localStorage` under the key `app_jwt`.
+  - Exports `apiFetch(path, options)` that uses `credentials: 'include'` so the browser sends the HttpOnly cookie automatically. No Authorization header.
 
 - `src/Auth.jsx`
   - On mount, calls `getUser()` (which calls `GET /users/me`) to show `Welcome, <email>!` or "Login with Google".
 
 - `src/pages/Login.jsx`
-  - If no token, shows a button calling `loginWithGoogle()`.
+  - Checks session by calling `/users/me`. If logged in, prompts to go Home; else shows a “Login with Google” button.
 
 - `src/pages/OAuthCallback.jsx`
-  - Parses `access_token` from the query string (when the backend redirects directly with a token) and stores it.
-  - If no `access_token` but `code` and `state` are present, calls the backend callback to exchange and then stores the token from the response.
-  - Navigates to `/` after storing the token.
+  - After redirect from backend, simply verifies the session by calling `/users/me` and navigates to `/`.
 
 - `src/App.jsx`
   - Defines routes: `/login`, `/oauth-callback`, and `/`.
-  - Wraps `/` in `RequireAuth`, which redirects to `/login` when no token exists.
+  - Wraps `/` in `RequireAuth`, which calls `/users/me` to check for a valid session and redirects to `/login` if unauthenticated.
 
 - `src/authClient.js`
-  - `loginWithGoogle()` calls `GET ${API_URL}/auth/google/authorize?redirect_url=${window.location.origin}/oauth-callback`, expects `{ authorization_url }`, then `window.location.assign(authorization_url)`.
+  - `loginWithGoogle()` calls `GET ${API_URL}/auth/google/authorize?redirect_url=${window.location.origin}/oauth-callback`, expects `{ authorization_url }`, then redirects the browser to it.
   - `getUser()` calls `apiFetch('/users/me')`.
-  - `logoutUser()` clears the token and navigates to `/login`.
+  - `logoutUser()` calls `POST /auth/cookie/logout` and navigates to `/login`.
 
 
 ## User Journey and Network Calls
@@ -122,14 +115,13 @@ Notes:
    - Browser navigates to `authorization_url` (Google).
 3. User completes Google authentication. Google redirects to backend:
    - `GET {API_URL}/auth/google/callback?code=…&state=…`.
-4. Backend (fastapi-users + `RedirectBearerTransport`) finishes the exchange and returns:
-   - `302 Location: {FRONTEND_URL}/oauth-callback?access_token=<JWT>`.
-5. Frontend `OAuthCallback.jsx` reads `access_token` from query, stores it in `localStorage`, and navigates to `/`.
-   - Fallback: if token not present but `code`+`state` are, it calls `GET {API_URL}/auth/google/callback?...`, expects JSON with `access_token`, stores it, and navigates to `/`.
-6. The home page (`/`) is protected by `RequireAuth`. With token stored, it renders `Home` and `Auth`.
+4. Backend exchanges the code with Google, sets an HttpOnly cookie session, then returns:
+   - `302 Location: {FRONTEND_URL}/oauth-callback`.
+5. Frontend `OAuthCallback.jsx` verifies the session by calling `GET {API_URL}/users/me` and navigates to `/`.
+6. The home page (`/`) is protected by `RequireAuth` which calls `/users/me` to ensure the session is valid.
 7. `Auth` calls `GET {API_URL}/users/me` to display the user’s email.
 8. The “Call /authenticated-route” button triggers `GET {API_URL}/authenticated-route` and displays the response.
-9. Logout clears the token and sends the user back to `/login`.
+9. Logout calls `POST {API_URL}/auth/cookie/logout` and returns the user to `/login`.
 
 
 ## Environment Variables and Configuration
@@ -139,6 +131,7 @@ Backend:
   - Authorized redirect URI: `http://localhost:8000/auth/google/callback`
   - Authorized JavaScript origin: `http://localhost:5173`
 - `FRONTEND_URL` (optional, default `http://localhost:5173`) — where to redirect after OAuth success.
+- `SECURE_COOKIES` (optional, default `false`) — set to `true` in production to enable the Secure flag on cookies.
 
 Frontend:
 - `VITE_API_URL` (optional, default `http://localhost:8000`) — the backend base URL used by `api.js`.
@@ -160,6 +153,7 @@ pip install -r backend/requirements.txt
 export GOOGLE_CLIENT_ID=your_id
 export GOOGLE_CLIENT_SECRET=your_secret
 # optionally: export FRONTEND_URL=http://localhost:5173
+# optionally (prod-like): export SECURE_COOKIES=true
 python3 backend/main.py
 ```
 
@@ -174,10 +168,23 @@ npm run dev
 
 ## Security Notes and Alternatives
 
-- This demo redirects with `?access_token=…` in the URL. For production, prefer one of these approaches:
-  - Use an HttpOnly cookie transport (like the example repo’s `OAuthCookieTransport`) so the token is not accessible to JavaScript or present in URLs.
-  - Use a short-lived one-time code in the redirect and exchange it in the SPA through a backend endpoint to obtain a token.
-- If you switch to cookies, you will no longer store tokens in `localStorage`, and `api.js` won’t need to set the `Authorization` header.
+- This implementation uses an HttpOnly cookie session for authentication. The SPA never handles tokens directly.
+- Alternative: SPA PKCE flow (frontend receives code and exchanges with backend) — useful for pure SPA architectures or specific gateway patterns, but not necessary here.
+- If you switch to a bearer-token SPA model, you’d re-introduce storing tokens and Authorization headers; that is less secure by default than HttpOnly cookies.
+
+## Production notes
+
+- Cookies
+  - Set `SECURE_COOKIES=true` so cookies are only sent over HTTPS.
+  - For cross-site setups (different frontend/backend domains), set cookie `SameSite=None` and ensure HTTPS; also set an appropriate cookie domain (e.g., `.example.com`) so the browser sends it to the API.
+  - Consider CSRF protection for state-changing endpoints when using cookies.
+- CORS
+  - Ensure `allow_credentials=True` is set server-side and origins are restricted to your exact frontend origin(s).
+- Google OAuth
+  - Configure production Authorized redirect URI (e.g., `https://api.example.com/auth/google/callback`) and JavaScript origin (e.g., `https://app.example.com`).
+  - Keep client secret server-side only.
+- Proxies/Deployments
+  - Run behind HTTPS. If behind a proxy (NGINX, Cloudflare), ensure forwarded headers are preserved so URLs are generated correctly.
 
 
 ## Extending This Template
