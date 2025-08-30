@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import User, OAuthAccount
 from .schemas import UserCreate, UserUpdate
-from .users import UserManager
+from .auth.user_manager import UserManager
 from fastapi_users.db import SQLAlchemyUserDatabase
 
 

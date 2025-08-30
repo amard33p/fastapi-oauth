@@ -1,7 +1,7 @@
 import pytest_asyncio
 from fastapi.testclient import TestClient
 
-from app.app import app as fastapi_app
+from app.main import app
 from app.db import (
     AccessToken,
     engine,
@@ -48,9 +48,9 @@ async def client(async_session):
     async def override():
         yield async_session
 
-    fastapi_app.dependency_overrides[app_get_async_session] = override
+    app.dependency_overrides[app_get_async_session] = override
 
-    with TestClient(fastapi_app) as c:
+    with TestClient(app) as c:
         # Ensure a normal user exists in this session
         user = await get_or_create_user(
             async_session,
@@ -66,7 +66,7 @@ async def client(async_session):
 
         yield c
 
-    fastapi_app.dependency_overrides.pop(app_get_async_session, None)
+    app.dependency_overrides.pop(app_get_async_session, None)
 
 
 @pytest_asyncio.fixture(scope="function", autouse=True)

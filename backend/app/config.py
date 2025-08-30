@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     SECURE_COOKIES: bool = False
     SECRET: str = "SECRET"
     DB_NAME: str | None = None
+    COOKIE_MAX_AGE: int = 3600
 
     @property
     def DATABASE_URL(self) -> str:
