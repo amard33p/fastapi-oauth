@@ -9,34 +9,39 @@ The goal of this README is to be explicit enough that another LLM (or developer)
 
 ```
 fastapi-oauth/
-├─ backend/
-│  ├─ app/
-│  │  ├─ app.py            # FastAPI app, routers, CORS, demo protected route
-│  │  ├─ users.py          # fastapi-users setup + cookie auth + OAuth cookie transport
-│  │  ├─ db.py             # SQLAlchemy models + async engine/session helpers
-│  │  ├─ schemas.py        # fastapi-users schemas used by routers
-│  │  └─ __init__.py
-│  ├─ main.py              # Uvicorn entrypoint for backend
-│  └─ pyproject.toml       # Backend package + dependencies
-│
-├─ frontend/
-│  ├─ src/
-│  │  ├─ api.js            # API URL + fetch helper (credentials: 'include'; no Authorization header)
-│  │  ├─ Auth.jsx          # Small widget that shows login/logout or user email
-│  │  ├─ App.jsx           # Router + RequireAuth wrapper
-│  │  └─ pages/
-│  │     ├─ Login.jsx          # “Login with Google” entrypoint
-│  │     ├─ OAuthCallback.jsx  # Handles redirect and verifies session via cookie
-│  │     └─ Home.jsx           # Example protected page calling the API
-│  ├─ index.html
-│  ├─ package.json
-│  └─ README.md (frontend-only doc)
-│
-└─ .gitignore
-```
+.
+├── backend/                          # Backend FastAPI project
+│   ├── app/                          # Application code
+│   │   ├── app.py                    # FastAPI app setup: CORS, routers, OAuth routes
+│   │   ├── crud_user.py              # CRUD utilities for users via SQLAlchemy/UserManager
+│   │   ├── db.py                     # SQLAlchemy models, engine/session, create_db_and_tables()
+│   │   ├── schemas.py                # Pydantic user schemas (UserRead, UserCreate, UserUpdate)
+│   │   ├── test.db                   # Local SQLite DB (auto-created)
+│   │   └── users.py                  # fastapi-users config: OAuth backend, current_active_user
+│   ├── main.py                       # Uvicorn entrypoint to run the API locally
+│   ├── pyproject.toml                # Backend dependencies & metadata
+│   ├── tests/                        # Test suite
+│   │   ├── conftest.py               # Pytest fixtures: db session & authenticated TestClient
+│   │   ├── e2e/                      # End-to-end tests (e.g., authenticated route)
+│   │   └── repositories/             # Repository/CRUD tests (e.g., user update)
+├── frontend/                         # Frontend React/Vite project
+│   ├── index.html                    # Vite HTML entrypoint
+│   ├── package-lock.json             # NPM lockfile
+│   ├── package.json                  # Frontend manifest & scripts
+│   ├── README.md                     # Frontend-specific instructions
+│   ├── src/                          # Source code
+│   │   ├── api.js                    # Fetch helper with credentials: 'include'
+│   │   ├── App.jsx                   # Routes + simple route guard
+│   │   ├── Auth.jsx                  # Minimal demo auth component
+│   │   ├── authClient.js             # Cookie-session auth helpers (login/logout/getUser)
+│   │   ├── main.jsx                  # App bootstrap with React Router
+│   │   └── pages/                    # Route components
+│   │       ├── Home.jsx              # Protected home, calls /authenticated-route
+│   │       ├── Login.jsx             # Login page with Google sign-in
+│   │       └── OAuthCallback.jsx     # Verifies session after backend redirect
+│   └── vite.config.js                # Vite + dev server config
 
-- The SQLite DB is created at `backend/app/test.db`.
-- The backend serves JSON APIs only; the SPA is served separately by Vite in development.
+```
 
 
 ## Backend: Key Files and Concepts
@@ -125,10 +130,12 @@ Notes:
 
 ## Environment Variables and Configuration
 
+Google Cloud Console:
+- Authorized JavaScript origins: `http://localhost:5173`
+- Authorized redirect URIs: `http://localhost:8000/auth/google/callback`
+
 Backend:
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (required) — from Google Cloud Console.
-  - Authorized redirect URI: `http://localhost:8000/auth/google/callback`
-  - Authorized JavaScript origin: `http://localhost:5173`
 - `FRONTEND_URL` (optional, default `http://localhost:5173`) — where to redirect after OAuth success.
 - `SECURE_COOKIES` (optional, default `false`) — set to `true` in production to enable the Secure flag on cookies.
 
