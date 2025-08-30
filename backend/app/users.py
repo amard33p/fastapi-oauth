@@ -16,16 +16,16 @@ from fastapi_users.authentication.strategy.db import (
 )
 
 from .db import User, get_user_db, AccessToken, get_access_token_db
+from .config import settings
 
-SECRET = "SECRET"
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-# Set to true in production
-SECURE_COOKIES = os.getenv("SECURE_COOKIES", "false").lower() in {"1", "true", "yes"}
+SECRET = settings.SECRET
+FRONTEND_URL = settings.FRONTEND_URL
+SECURE_COOKIES = settings.SECURE_COOKIES
 
 
 google_oauth_client = GoogleOAuth2(
-    os.getenv("GOOGLE_CLIENT_ID", ""),
-    os.getenv("GOOGLE_CLIENT_SECRET", ""),
+    settings.GOOGLE_CLIENT_ID,
+    settings.GOOGLE_CLIENT_SECRET,
 )
 
 

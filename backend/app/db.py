@@ -1,6 +1,4 @@
 from collections.abc import AsyncGenerator
-from pathlib import Path
-
 from fastapi import Depends
 from fastapi_users.db import (
     SQLAlchemyBaseOAuthAccountTableUUID,
@@ -13,10 +11,7 @@ from fastapi_users_db_sqlalchemy.access_token import (
 )
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, relationship
-
-# Resolve DB file relative to the backend package so running from any CWD works
-DB_PATH = (Path(__file__).resolve().parent / "test.db").as_posix()
-DATABASE_URL = f"sqlite+aiosqlite:///{DB_PATH}"
+from .config import settings
 
 
 class Base(DeclarativeBase):
@@ -37,7 +32,7 @@ class AccessToken(SQLAlchemyBaseAccessTokenTableUUID, Base):
     pass
 
 
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(settings.DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 

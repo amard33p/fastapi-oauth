@@ -16,6 +16,7 @@ dependencies = [
   "fastapi-users[oauth,sqlalchemy]",
   "uvicorn[standard]",
   "aiosqlite",
+  "pydantic-settings>=2.3",
 ]
 
 [tool.uv]

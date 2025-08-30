@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .db import User, create_db_and_tables
 from .schemas import UserCreate, UserRead, UserUpdate
+from .config import settings
 from .users import (
     SECRET,
     cookie_oauth_auth_backend,
@@ -26,7 +27,7 @@ app = FastAPI(lifespan=lifespan)
 # Allow frontend SPA to call the API during development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[settings.FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
