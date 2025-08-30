@@ -3,13 +3,10 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.db import (
-    AccessToken,
     engine,
     get_async_session as app_get_async_session,
 )
-from app.crud_user import get_or_create_user
-from fastapi_users.authentication.strategy.db import DatabaseStrategy
-from fastapi_users_db_sqlalchemy.access_token import SQLAlchemyAccessTokenDatabase
+from app.crud_user import get_or_create_user, issue_access_token
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,12 +35,7 @@ async def async_session():
 
 @pytest_asyncio.fixture(scope="function")
 async def client(async_session):
-    """Authenticated TestClient that uses the same transactional async_session.
-
-    - Overrides app's get_async_session to return our per-test session
-    - Ensures a normal user exists and issues a DB-backed token
-    - Sets the cookie expected by the app's CookieTransport
-    """
+    """Unauthenticated TestClient bound to the per-test async_session."""
 
     async def override():
         yield async_session
@@ -51,22 +43,45 @@ async def client(async_session):
     app.dependency_overrides[app_get_async_session] = override
 
     with TestClient(app) as c:
-        # Ensure a normal user exists in this session
-        user = await get_or_create_user(
-            async_session,
-            email="user@example.com",
-            password="password123",
-            is_superuser=False,
-        )
-        # Issue token and set cookie
-        access_token_db = SQLAlchemyAccessTokenDatabase(async_session, AccessToken)
-        strategy = DatabaseStrategy(database=access_token_db, lifetime_seconds=3600)
-        token = await strategy.write_token(user)
-        c.cookies.set("access_token", token)
-
         yield c
 
     app.dependency_overrides.pop(app_get_async_session, None)
+
+
+@pytest_asyncio.fixture
+async def auth_client(async_session):
+    """Factory to authenticate a TestClient as a given User via cookie token."""
+
+    async def _auth(c: TestClient, user):
+        token = await issue_access_token(async_session, user)
+        c.cookies.set("access_token", token)
+        return c
+
+    return _auth
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client_with_normal_user(client, async_session, auth_client):
+    """Convenience fixture: client logged in as a normal user."""
+    user = await get_or_create_user(
+        async_session,
+        email="user@example.com",
+        password="normalpass",
+        is_superuser=False,
+    )
+    return await auth_client(client, user)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client_with_superuser(client, async_session, auth_client):
+    """Convenience fixture: client logged in as a superuser."""
+    user = await get_or_create_user(
+        async_session,
+        email="admin@example.com",
+        password="supersecret",
+        is_superuser=True,
+    )
+    return await auth_client(client, user)
 
 
 @pytest_asyncio.fixture(scope="function", autouse=True)

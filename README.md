@@ -2,70 +2,65 @@
 
 This project demonstrates a minimal, end-to-end OAuth login with Google using FastAPI on the backend and a React + Vite SPA on the frontend. It builds on top of fastapi-users and shows how to wire a redirect-based OAuth flow to an SPA using secure HttpOnly cookies (no tokens in URLs or localStorage).
 
-The goal of this README is to be explicit enough that another LLM (or developer) can recreate the project and wiring by following the descriptions below.
-
-
 ## Project Structure
 
 ```
-fastapi-oauth/
-.
-├── backend/                          # Backend FastAPI project
-│   ├── app/                          # Application code
-│   │   ├── app.py                    # FastAPI app setup: CORS, routers, OAuth routes
-│   │   ├── crud_user.py              # CRUD utilities for users via SQLAlchemy/UserManager
-│   │   ├── db.py                     # SQLAlchemy models, engine/session, create_db_and_tables()
-│   │   ├── schemas.py                # Pydantic user schemas (UserRead, UserCreate, UserUpdate)
-│   │   ├── test.db                   # Local SQLite DB (auto-created)
-│   │   └── users.py                  # fastapi-users config: OAuth backend, current_active_user
-│   ├── main.py                       # Uvicorn entrypoint to run the API locally
-│   ├── pyproject.toml                # Backend dependencies & metadata
-│   ├── tests/                        # Test suite
-│   │   ├── conftest.py               # Pytest fixtures: db session & authenticated TestClient
-│   │   ├── e2e/                      # End-to-end tests (e.g., authenticated route)
-│   │   └── repositories/             # Repository/CRUD tests (e.g., user update)
-├── frontend/                         # Frontend React/Vite project
-│   ├── index.html                    # Vite HTML entrypoint
-│   ├── package-lock.json             # NPM lockfile
-│   ├── package.json                  # Frontend manifest & scripts
-│   ├── README.md                     # Frontend-specific instructions
-│   ├── src/                          # Source code
-│   │   ├── client/                   # Auto-generated OpenAPI SDK (services & types)
-│   │   ├── App.jsx                   # Routes + simple route guard
-│   │   ├── Auth.jsx                  # Minimal demo auth component
-│   │   ├── main.jsx                  # App bootstrap with React Router
-│   │   └── pages/                    # Route components
-│   │       ├── Home.jsx              # Protected home, calls /authenticated-route
-│   │       ├── Login.jsx             # Login page with Google sign-in
-│   │       └── OAuthCallback.jsx     # Verifies session after backend redirect
-│   └── vite.config.js                # Vite + dev server config
-
+├── backend
+│   ├── app
+│   │   ├── auth                             # fastapi-users auth setup
+│   │   │   ├── auth_backend.py              # Cookie-based auth backend wiring
+│   │   │   ├── auth_transport.py            # OAuthCookieTransport (cookie name, flags)
+│   │   │   ├── oauth_client.py              # Google OAuth client
+│   │   │   ├── token_strategy.py            # DB-backed token strategy provider
+│   │   │   ├── user_manager.py              # fastapi-users UserManager
+│   │   │   └── user_setup.py                # fastapi_users instance and deps
+│   │   ├── config.py                        # Pydantic Settings; loads env from backend/demo.env
+│   │   ├── crud_user.py                     # get_or_create_user, issue_access_token helpers
+│   │   ├── db.py                            # SQLAlchemy models + engine/session + create_db_and_tables()
+│   │   ├── main.py                          # FastAPI app, CORS, includes routers
+│   │   ├── routes                           # API routers
+│   │   │   ├── auth.py                      # /auth cookie login + Google OAuth routers
+│   │   │   ├── main.py                      # Aggregates routers; defines /authenticated-route
+│   │   │   └── users.py                     # /users routes (get current user, etc.)
+│   │   ├── schemas.py                       # Pydantic user schemas (read/create/update)
+│   │   └── test.db                          # Local SQLite DB (auto-created for dev/tests)
+│   ├── demo.env                             # Backend env file consumed by app/config.py
+│   ├── main.py                              # Uvicorn entrypoint (imports app from app/main.py)
+│   ├── pyproject.toml                       # Backend deps + dev-deps (pytest, ruff)
+│   ├── tests                                # Test suite
+│   │   ├── conftest.py                      # async_session, client, auth_client, convenience clients
+│   │   ├── repositories
+│   │   │   └── test_user_repository.py      # Repository/CRUD tests
+│   │   └── routes
+│   │       └── test_authenticated_route.py  # Route tests for /authenticated-route
+│   └── uv.lock                              # uv lockfile
+├── frontend
+│   ├── biome.json                           # Frontend linter config
+│   ├── index.html                           # Vite HTML entrypoint
+│   ├── openapi-ts.config.ts                 # OpenAPI TS generator config
+│   ├── openapi.json                         # Exported backend OpenAPI spec
+│   ├── package-lock.json                    # NPM lockfile
+│   ├── package.json                         # Frontend manifest & scripts
+│   ├── README.md                            # Frontend instructions
+│   ├── src
+│   │   ├── App.jsx                          # Routes + simple route guard
+│   │   ├── Auth.jsx                         # Minimal demo auth widget
+│   │   ├── client                           # Generated OpenAPI SDK
+│   │   │   ├── core                         # Generator internals
+│   │   │   ├── index.ts                     # SDK bootstrap/config
+│   │   │   ├── sdk.gen.ts                   # Generated service methods
+│   │   │   └── types.gen.ts                 # Generated types
+│   │   ├── main.jsx                         # React bootstrap
+│   │   └── pages
+│   │       ├── Home.jsx                     # Protected home, calls /authenticated-route
+│   │       ├── Login.jsx                    # Login page (starts OAuth)
+│   │       └── OAuthCallback.jsx            # Verifies session after backend redirect
+│   └── vite.config.js                       # Vite + dev server config
+├── generate_client.sh                       # Script to (re)generate frontend SDK
 ```
 
 
-## Backend: Key Files and Concepts
-
-- `backend/app/users.py`
-  - Implements a cookie-only OAuth backend: `cookie_oauth_auth_backend` using `OAuthCookieTransport` to set an HttpOnly cookie and redirect to the SPA after OAuth success.
-  - Uses a database-backed auth strategy (`DatabaseStrategy`) so tokens are persisted and deleted on logout.
-  - Exposes `google_oauth_client` (from `httpx-oauth`), the `fastapi_users` instance, and `current_active_user` dependency.
-
-- `backend/app/app.py`
-  - Creates the FastAPI app and enables CORS for `http://localhost:5173`.
-  - Mounts fastapi-users routers:
-    - Cookie login/logout router under `/auth/cookie` using `cookie_oauth_auth_backend`.
-    - Register, reset password, verify routers under `/auth`.
-    - Users router under `/users`.
-    - Google OAuth router under `/auth/google`, using `cookie_oauth_auth_backend` so the callback sets the cookie and redirects to the SPA.
-  - Defines `/authenticated-route` as an example protected endpoint using `current_active_user`.
-
-- `backend/app/db.py`
-  - Defines `User` and `OAuthAccount` SQLAlchemy models compatible with fastapi-users.
-  - Defines an `AccessToken` model and adapter for storing access tokens when using the database auth strategy.
-  - Uses a local SQLite DB at `backend/app/test.db` via `sqlite+aiosqlite`.
-
-
-## Backend: Endpoints You Need
+## Backend
 
 - OAuth (mounted at `/auth/google`):
   - `GET /auth/google/authorize` → returns `{ "authorization_url": "…" }`. The SPA redirects the browser to this URL.
@@ -85,7 +80,7 @@ Notes:
 - `FRONTEND_URL` controls where the backend redirects after OAuth success.
 
 
-## Frontend: Wiring and Responsibilities
+## Frontend
 
 - `src/client/`
   - Generated SDK via `@hey-api/openapi-ts`. Use services like `AuthService`, `UsersService`, `DefaultService`.
@@ -154,10 +149,6 @@ Backend (terminal 1):
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ./backend
-export GOOGLE_CLIENT_ID=your_id
-export GOOGLE_CLIENT_SECRET=your_secret
-# optionally: export FRONTEND_URL=http://localhost:5173
-# optionally (prod-like): export SECURE_COOKIES=true
 python3 backend/main.py
 ```
 
@@ -209,5 +200,4 @@ npm run dev
 ## References
 
 - fastapi-users: https://github.com/fastapi-users/fastapi-users
-- httpx-oauth: https://github.com/terrycain/httpx-oauth
-- React Router: https://reactrouter.com/
+- https://github.com/PeterTakahashi/service-base-auth-fastapi/
