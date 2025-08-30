@@ -1,32 +1,53 @@
-import React, { useEffect, useState } from 'react'
-import { loginWithGoogle, logoutUser, getUser } from './authClient'
+import React, { useEffect, useState } from "react";
+import { AuthService, UsersService } from "./client";
 
 export default function Auth() {
-  const [user, setUser] = useState(null)
+	const [user, setUser] = useState(null);
 
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const userData = await getUser()
-        setUser(userData)
-      } catch (error) {
-        setUser(null)
-      }
-    }
+	useEffect(() => {
+		const checkUser = async () => {
+			try {
+				const userData = await UsersService.currentUserUsersMeGet();
+				setUser(userData);
+			} catch (error) {
+				setUser(null);
+			}
+		};
 
-    checkUser()
-  }, [])
+		checkUser();
+	}, []);
 
-  return (
-    <div>
-      {user ? (
-        <>
-          <p>Welcome, {user.email}!</p>
-          <button onClick={logoutUser}>Logout</button>
-        </>
-      ) : (
-        <button onClick={loginWithGoogle}>Login with Google</button>
-      )}
-    </div>
-  )
+	const handleLogin = async () => {
+		const res =
+			await AuthService.oauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGet();
+		if (!res?.authorization_url)
+			throw new Error("authorization_url not returned");
+		window.location.assign(res.authorization_url);
+	};
+
+	const handleLogout = async () => {
+		try {
+			await AuthService.cookieOauthLogoutAuthCookieLogoutPost();
+		} catch (_) {
+			// ignore
+		}
+		window.location.assign("/login");
+	};
+
+	return (
+		<div>
+			{user ? (
+				<>
+					<p>Welcome, {user.email}!</p>
+					<button type="button" onClick={handleLogout}>
+						Logout
+					</button>
+				</>
+			) : (
+				<button type="button" onClick={handleLogin}>
+					Login with Google
+				</button>
+			)}
+		</div>
+	);
 }

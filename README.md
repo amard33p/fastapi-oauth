@@ -30,10 +30,9 @@ fastapi-oauth/
 │   ├── package.json                  # Frontend manifest & scripts
 │   ├── README.md                     # Frontend-specific instructions
 │   ├── src/                          # Source code
-│   │   ├── api.js                    # Fetch helper with credentials: 'include'
+│   │   ├── client/                   # Auto-generated OpenAPI SDK (services & types)
 │   │   ├── App.jsx                   # Routes + simple route guard
 │   │   ├── Auth.jsx                  # Minimal demo auth component
-│   │   ├── authClient.js             # Cookie-session auth helpers (login/logout/getUser)
 │   │   ├── main.jsx                  # App bootstrap with React Router
 │   │   └── pages/                    # Route components
 │   │       ├── Home.jsx              # Protected home, calls /authenticated-route
@@ -69,7 +68,7 @@ fastapi-oauth/
 ## Backend: Endpoints You Need
 
 - OAuth (mounted at `/auth/google`):
-  - `GET /auth/google/authorize?redirect_url=<SPA URL>` → returns `{ "authorization_url": "…" }`. The SPA redirects the browser to this URL.
+  - `GET /auth/google/authorize` → returns `{ "authorization_url": "…" }`. The SPA redirects the browser to this URL.
   - `GET /auth/google/callback?code=…&state=…` → backend exchanges the code with Google; `OAuthCookieTransport` sets an HttpOnly cookie and responds with `302` to `FRONTEND_URL/oauth-callback`.
 
 - Users:
@@ -88,44 +87,43 @@ Notes:
 
 ## Frontend: Wiring and Responsibilities
 
-- `src/api.js`
-  - Exports `API_URL` from `import.meta.env.VITE_API_URL` (default `http://localhost:8000`).
-  - Exports `apiFetch(path, options)` that uses `credentials: 'include'` so the browser sends the HttpOnly cookie automatically. No Authorization header.
+- `src/client/`
+  - Generated SDK via `@hey-api/openapi-ts`. Use services like `AuthService`, `UsersService`, `DefaultService`.
+  - In `src/main.jsx`, configure `OpenAPI.BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'` and `OpenAPI.WITH_CREDENTIALS = true` so axios sends cookies.
 
 - `src/Auth.jsx`
-  - On mount, calls `getUser()` (which calls `GET /users/me`) to show `Welcome, <email>!` or "Login with Google".
+  - On mount, calls `UsersService.currentUserUsersMeGet()` to show `Welcome, <email>!` or "Login with Google".
 
 - `src/pages/Login.jsx`
-  - Checks session by calling `/users/me`. If logged in, prompts to go Home; else shows a “Login with Google” button.
+  - Checks session by calling `UsersService.currentUserUsersMeGet()`. If logged in, prompts to go Home; else shows a “Login with Google” button.
 
 - `src/pages/OAuthCallback.jsx`
-  - After redirect from backend, simply verifies the session by calling `/users/me` and navigates to `/`.
+  - After redirect from backend, verifies the session by calling `UsersService.currentUserUsersMeGet()` and navigates to `/`.
 
 - `src/App.jsx`
   - Defines routes: `/login`, `/oauth-callback`, and `/`.
-  - Wraps `/` in `RequireAuth`, which calls `/users/me` to check for a valid session and redirects to `/login` if unauthenticated.
+  - Wraps `/` in `RequireAuth`, which calls `UsersService.currentUserUsersMeGet()` to check for a valid session and redirects to `/login` if unauthenticated.
 
-- `src/authClient.js`
-  - `loginWithGoogle()` calls `GET ${API_URL}/auth/google/authorize?redirect_url=${window.location.origin}/oauth-callback`, expects `{ authorization_url }`, then redirects the browser to it.
-  - `getUser()` calls `apiFetch('/users/me')`.
-  - `logoutUser()` calls `POST /auth/cookie/logout` and navigates to `/login`.
+- Login and logout
+  - Start login by calling `AuthService.oauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGet()` and redirect to `authorization_url`.
+  - Logout by calling `AuthService.cookieOauthLogoutAuthCookieLogoutPost()` and then navigate to `/login`.
 
 
 ## User Journey and Network Calls
 
 1. User visits the SPA at `http://localhost:5173/login`.
 2. User clicks “Login with Google”. Frontend executes:
-   - `GET {API_URL}/auth/google/authorize?redirect_url=http://localhost:5173/oauth-callback` → `{ authorization_url }`.
+   - `GET {API_URL}/auth/google/authorize` → `{ authorization_url }`.
    - Browser navigates to `authorization_url` (Google).
 3. User completes Google authentication. Google redirects to backend:
    - `GET {API_URL}/auth/google/callback?code=…&state=…`.
 4. Backend exchanges the code with Google, sets an HttpOnly cookie session, then returns:
    - `302 Location: {FRONTEND_URL}/oauth-callback`.
-5. Frontend `OAuthCallback.jsx` verifies the session by calling `GET {API_URL}/users/me` and navigates to `/`.
-6. The home page (`/`) is protected by `RequireAuth` which calls `/users/me` to ensure the session is valid.
-7. `Auth` calls `GET {API_URL}/users/me` to display the user’s email.
-8. The “Call /authenticated-route” button triggers `GET {API_URL}/authenticated-route` and displays the response.
-9. Logout calls `POST {API_URL}/auth/cookie/logout` and returns the user to `/login`.
+5. Frontend `OAuthCallback.jsx` verifies the session by calling `UsersService.currentUserUsersMeGet()` and navigates to `/`.
+6. The home page (`/`) is protected by `RequireAuth` which calls `UsersService.currentUserUsersMeGet()` to ensure the session is valid.
+7. `Auth` calls `UsersService.currentUserUsersMeGet()` to display the user’s email.
+8. The “Call /authenticated-route” button uses `DefaultService.authenticatedRouteAuthenticatedRouteGet()` and displays the response.
+9. Logout calls `AuthService.cookieOauthLogoutAuthCookieLogoutPost()` and returns the user to `/login`.
 
 
 ## Environment Variables and Configuration
@@ -140,7 +138,7 @@ Backend:
 - `SECURE_COOKIES` (optional, default `false`) — set to `true` in production to enable the Secure flag on cookies.
 
 Frontend:
-- `VITE_API_URL` (optional, default `http://localhost:8000`) — the backend base URL used by `api.js`.
+- `VITE_API_URL` (optional, default `http://localhost:8000`) — the backend base URL used to configure the generated SDK in `src/main.jsx`.
 
 Database:
 - Local SQLite at `backend/app/test.db`. No migrations are included; tables are auto-created at startup.
@@ -204,7 +202,7 @@ npm run dev
 ## Troubleshooting
 
 - “Landing on backend JSON page at `/auth/google/callback`” → ensure the OAuth router uses the cookie-based backend (we use `cookie_oauth_auth_backend` with `OAuthCookieTransport` in `app.py`).
-- SPA doesn’t see the user → ensure requests use `credentials: 'include'` (see `src/api.js`) and your cookie domain/SameSite are set correctly for your environment.
+- SPA doesn’t see the user → ensure the SDK is configured with `OpenAPI.WITH_CREDENTIALS = true` in `src/main.jsx` and your cookie domain/SameSite are set correctly for your environment.
 - 401 on protected routes → session cookie missing or expired; re-login.
 
 

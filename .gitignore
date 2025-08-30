@@ -270,6 +270,7 @@ bower_components
 .sass-cache
 connect.lock
 typings
+openapi.json
 
 # Logs
 logs

@@ -1,21 +1,26 @@
 {
-  "name": "fastapi-oauth-poc",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "start": "vite",
-    "build": "vite build",
-    "preview": "vite preview --port 5174"
-  },
-  "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-router-dom": "^6.26.1"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.1"
-  }
+	"name": "fastapi-oauth-poc",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"start": "vite",
+		"build": "vite build",
+		"preview": "vite preview --port 5174",
+		"lint": "biome check --apply-unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
+		"generate-client": "openapi-ts"
+	},
+	"dependencies": {
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
+		"react-router-dom": "^6.26.1",
+		"axios": "1.11.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@vitejs/plugin-react": "^4.3.1",
+		"vite": "^5.4.1",
+		"@hey-api/openapi-ts": "^0.80.0"
+	}
 }
