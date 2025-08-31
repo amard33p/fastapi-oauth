@@ -1,4 +1,5 @@
 from fastapi_users.authentication import CookieTransport
+
 from app.config import settings
 
 
@@ -16,7 +17,15 @@ class OAuthCookieTransport(CookieTransport):
 
 oauth_cookie_transport = OAuthCookieTransport(
     cookie_name="access_token",
-    cookie_max_age=3600,
+    cookie_max_age=settings.COOKIE_MAX_AGE,
+    cookie_secure=settings.SECURE_COOKIES,
+    cookie_httponly=True,
+)
+
+# Non-redirecting transport for classic username/password cookie login
+cookie_transport = CookieTransport(
+    cookie_name="access_token",
+    cookie_max_age=settings.COOKIE_MAX_AGE,
     cookie_secure=settings.SECURE_COOKIES,
     cookie_httponly=True,
 )

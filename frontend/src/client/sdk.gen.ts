@@ -4,9 +4,9 @@ import type { CancelablePromise } from "./core/CancelablePromise";
 import { OpenAPI } from "./core/OpenAPI";
 import { request as __request } from "./core/request";
 import type {
-	AuthCookieOauthLoginApiV1AuthCookieLoginPostData,
-	AuthCookieOauthLoginApiV1AuthCookieLoginPostResponse,
-	AuthCookieOauthLogoutApiV1AuthCookieLogoutPostResponse,
+	AuthCookieLoginApiV1AuthCookieLoginPostData,
+	AuthCookieLoginApiV1AuthCookieLoginPostResponse,
+	AuthCookieLogoutApiV1AuthCookieLogoutPostResponse,
 	AuthenticatedRouteApiV1AuthenticatedRouteGetResponse,
 	OauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGetData,
 	OauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGetResponse,
@@ -25,16 +25,16 @@ import type {
 
 export class AuthService {
 	/**
-	 * Auth:Cookie Oauth.Login
+	 * Auth:Cookie.Login
 	 * @param data The data for the request.
 	 * @param data.formData
 	 * @returns unknown Successful Response
 	 * @returns void No Content
 	 * @throws ApiError
 	 */
-	public static cookieOauthLoginApiV1AuthCookieLoginPost(
-		data: AuthCookieOauthLoginApiV1AuthCookieLoginPostData,
-	): CancelablePromise<AuthCookieOauthLoginApiV1AuthCookieLoginPostResponse> {
+	public static cookieLoginApiV1AuthCookieLoginPost(
+		data: AuthCookieLoginApiV1AuthCookieLoginPostData,
+	): CancelablePromise<AuthCookieLoginApiV1AuthCookieLoginPostResponse> {
 		return __request(OpenAPI, {
 			method: "POST",
 			url: "/api/v1/auth/cookie/login",
@@ -48,12 +48,12 @@ export class AuthService {
 	}
 
 	/**
-	 * Auth:Cookie Oauth.Logout
+	 * Auth:Cookie.Logout
 	 * @returns unknown Successful Response
 	 * @returns void No Content
 	 * @throws ApiError
 	 */
-	public static cookieOauthLogoutApiV1AuthCookieLogoutPost(): CancelablePromise<AuthCookieOauthLogoutApiV1AuthCookieLogoutPostResponse> {
+	public static cookieLogoutApiV1AuthCookieLogoutPost(): CancelablePromise<AuthCookieLogoutApiV1AuthCookieLogoutPostResponse> {
 		return __request(OpenAPI, {
 			method: "POST",
 			url: "/api/v1/auth/cookie/logout",

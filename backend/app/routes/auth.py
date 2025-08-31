@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.auth.auth_backend import cookie_oauth_auth_backend
+from app.auth.auth_backend import cookie_oauth_auth_backend, cookie_auth_backend
 from app.auth.user_setup import fastapi_users
 from app.auth.oauth_client import google_oauth_client
 from app.config import settings
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # Cookie-based login/logout endpoints under /auth/cookie
 router.include_router(
-    fastapi_users.get_auth_router(cookie_oauth_auth_backend),
+    fastapi_users.get_auth_router(cookie_auth_backend),
     prefix="/cookie",
 )
 
@@ -20,6 +20,8 @@ router.include_router(
         google_oauth_client,
         cookie_oauth_auth_backend,
         settings.SECRET,
+        associate_by_email=True,
+        is_verified_by_default=True,
     ),
     prefix="/google",
 )
