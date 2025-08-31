@@ -7,7 +7,7 @@ export default function Auth() {
 	useEffect(() => {
 		const checkUser = async () => {
 			try {
-				const userData = await UsersService.currentUserUsersMeGet();
+				const userData = await UsersService.currentUserApiV1UsersMeGet();
 				setUser(userData);
 			} catch (error) {
 				setUser(null);
@@ -19,7 +19,7 @@ export default function Auth() {
 
 	const handleLogin = async () => {
 		const res =
-			await AuthService.oauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGet();
+			await AuthService.oauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGet();
 		if (!res?.authorization_url)
 			throw new Error("authorization_url not returned");
 		window.location.assign(res.authorization_url);
@@ -27,7 +27,7 @@ export default function Auth() {
 
 	const handleLogout = async () => {
 		try {
-			await AuthService.cookieOauthLogoutAuthCookieLogoutPost();
+			await AuthService.cookieOauthLogoutApiV1AuthCookieLogoutPost();
 		} catch (_) {
 			// ignore
 		}

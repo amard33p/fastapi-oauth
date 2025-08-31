@@ -7,7 +7,7 @@ export default function Login() {
 
 	useEffect(() => {
 		let mounted = true;
-		UsersService.currentUserUsersMeGet()
+		UsersService.currentUserApiV1UsersMeGet()
 			.then(() => mounted && setLoggedIn(true))
 			.catch(() => mounted && setLoggedIn(false));
 		return () => {
@@ -17,7 +17,7 @@ export default function Login() {
 
 	const handleLogin = async () => {
 		const res =
-			await AuthService.oauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGet();
+			await AuthService.oauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGet();
 		if (!res?.authorization_url)
 			throw new Error("authorization_url not returned by backend");
 		window.location.assign(res.authorization_url);

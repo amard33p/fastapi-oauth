@@ -10,7 +10,7 @@ function RequireAuth({ children }) {
 	const location = useLocation();
 	useEffect(() => {
 		let mounted = true;
-		UsersService.currentUserUsersMeGet()
+		UsersService.currentUserApiV1UsersMeGet()
 			.then(() => mounted && setStatus("ok"))
 			.catch(() => mounted && setStatus("noauth"));
 		return () => {

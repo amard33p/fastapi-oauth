@@ -6,7 +6,9 @@ from app.db import (
     engine,
     get_async_session as app_get_async_session,
 )
+from app.config import settings
 from app.crud_user import get_or_create_user, issue_access_token
+
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,7 +44,7 @@ async def client(async_session):
 
     app.dependency_overrides[app_get_async_session] = override
 
-    with TestClient(app) as c:
+    with TestClient(app, base_url=f"http://testserver{settings.API_V1_STR}") as c:
         yield c
 
     app.dependency_overrides.pop(app_get_async_session, None)

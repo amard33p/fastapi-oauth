@@ -4,23 +4,23 @@ import type { CancelablePromise } from "./core/CancelablePromise";
 import { OpenAPI } from "./core/OpenAPI";
 import { request as __request } from "./core/request";
 import type {
-	AuthCookieOauthLoginAuthCookieLoginPostData,
-	AuthCookieOauthLoginAuthCookieLoginPostResponse,
-	AuthCookieOauthLogoutAuthCookieLogoutPostResponse,
-	AuthenticatedRouteAuthenticatedRouteGetResponse,
-	OauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGetData,
-	OauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGetResponse,
-	OauthGoogleCookieOauthCallbackAuthGoogleCallbackGetData,
-	OauthGoogleCookieOauthCallbackAuthGoogleCallbackGetResponse,
-	UsersCurrentUserUsersMeGetResponse,
-	UsersDeleteUserUsersIdDeleteData,
-	UsersDeleteUserUsersIdDeleteResponse,
-	UsersPatchCurrentUserUsersMePatchData,
-	UsersPatchCurrentUserUsersMePatchResponse,
-	UsersPatchUserUsersIdPatchData,
-	UsersPatchUserUsersIdPatchResponse,
-	UsersUserUsersIdGetData,
-	UsersUserUsersIdGetResponse,
+	AuthCookieOauthLoginApiV1AuthCookieLoginPostData,
+	AuthCookieOauthLoginApiV1AuthCookieLoginPostResponse,
+	AuthCookieOauthLogoutApiV1AuthCookieLogoutPostResponse,
+	AuthenticatedRouteApiV1AuthenticatedRouteGetResponse,
+	OauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGetData,
+	OauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGetResponse,
+	OauthGoogleCookieOauthCallbackApiV1AuthGoogleCallbackGetData,
+	OauthGoogleCookieOauthCallbackApiV1AuthGoogleCallbackGetResponse,
+	UsersCurrentUserApiV1UsersMeGetResponse,
+	UsersDeleteUserApiV1UsersIdDeleteData,
+	UsersDeleteUserApiV1UsersIdDeleteResponse,
+	UsersPatchCurrentUserApiV1UsersMePatchData,
+	UsersPatchCurrentUserApiV1UsersMePatchResponse,
+	UsersPatchUserApiV1UsersIdPatchData,
+	UsersPatchUserApiV1UsersIdPatchResponse,
+	UsersUserApiV1UsersIdGetData,
+	UsersUserApiV1UsersIdGetResponse,
 } from "./types.gen";
 
 export class AuthService {
@@ -32,12 +32,12 @@ export class AuthService {
 	 * @returns void No Content
 	 * @throws ApiError
 	 */
-	public static cookieOauthLoginAuthCookieLoginPost(
-		data: AuthCookieOauthLoginAuthCookieLoginPostData,
-	): CancelablePromise<AuthCookieOauthLoginAuthCookieLoginPostResponse> {
+	public static cookieOauthLoginApiV1AuthCookieLoginPost(
+		data: AuthCookieOauthLoginApiV1AuthCookieLoginPostData,
+	): CancelablePromise<AuthCookieOauthLoginApiV1AuthCookieLoginPostResponse> {
 		return __request(OpenAPI, {
 			method: "POST",
-			url: "/auth/cookie/login",
+			url: "/api/v1/auth/cookie/login",
 			formData: data.formData,
 			mediaType: "application/x-www-form-urlencoded",
 			errors: {
@@ -53,10 +53,10 @@ export class AuthService {
 	 * @returns void No Content
 	 * @throws ApiError
 	 */
-	public static cookieOauthLogoutAuthCookieLogoutPost(): CancelablePromise<AuthCookieOauthLogoutAuthCookieLogoutPostResponse> {
+	public static cookieOauthLogoutApiV1AuthCookieLogoutPost(): CancelablePromise<AuthCookieOauthLogoutApiV1AuthCookieLogoutPostResponse> {
 		return __request(OpenAPI, {
 			method: "POST",
-			url: "/auth/cookie/logout",
+			url: "/api/v1/auth/cookie/logout",
 			errors: {
 				401: "Missing token or inactive user.",
 			},
@@ -70,12 +70,12 @@ export class AuthService {
 	 * @returns OAuth2AuthorizeResponse Successful Response
 	 * @throws ApiError
 	 */
-	public static oauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGet(
-		data: OauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGetData = {},
-	): CancelablePromise<OauthGoogleCookieOauthAuthorizeAuthGoogleAuthorizeGetResponse> {
+	public static oauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGet(
+		data: OauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGetData = {},
+	): CancelablePromise<OauthGoogleCookieOauthAuthorizeApiV1AuthGoogleAuthorizeGetResponse> {
 		return __request(OpenAPI, {
 			method: "GET",
-			url: "/auth/google/authorize",
+			url: "/api/v1/auth/google/authorize",
 			query: {
 				scopes: data.scopes,
 			},
@@ -96,12 +96,12 @@ export class AuthService {
 	 * @returns unknown Successful Response
 	 * @throws ApiError
 	 */
-	public static oauthGoogleCookieOauthCallbackAuthGoogleCallbackGet(
-		data: OauthGoogleCookieOauthCallbackAuthGoogleCallbackGetData = {},
-	): CancelablePromise<OauthGoogleCookieOauthCallbackAuthGoogleCallbackGetResponse> {
+	public static oauthGoogleCookieOauthCallbackApiV1AuthGoogleCallbackGet(
+		data: OauthGoogleCookieOauthCallbackApiV1AuthGoogleCallbackGetData = {},
+	): CancelablePromise<OauthGoogleCookieOauthCallbackApiV1AuthGoogleCallbackGetResponse> {
 		return __request(OpenAPI, {
 			method: "GET",
-			url: "/auth/google/callback",
+			url: "/api/v1/auth/google/callback",
 			query: {
 				code: data.code,
 				code_verifier: data.codeVerifier,
@@ -122,10 +122,10 @@ export class DefaultService {
 	 * @returns unknown Successful Response
 	 * @throws ApiError
 	 */
-	public static authenticatedRouteAuthenticatedRouteGet(): CancelablePromise<AuthenticatedRouteAuthenticatedRouteGetResponse> {
+	public static authenticatedRouteApiV1AuthenticatedRouteGet(): CancelablePromise<AuthenticatedRouteApiV1AuthenticatedRouteGetResponse> {
 		return __request(OpenAPI, {
 			method: "GET",
-			url: "/authenticated-route",
+			url: "/api/v1/authenticated-route",
 		});
 	}
 }
@@ -136,10 +136,10 @@ export class UsersService {
 	 * @returns UserRead Successful Response
 	 * @throws ApiError
 	 */
-	public static currentUserUsersMeGet(): CancelablePromise<UsersCurrentUserUsersMeGetResponse> {
+	public static currentUserApiV1UsersMeGet(): CancelablePromise<UsersCurrentUserApiV1UsersMeGetResponse> {
 		return __request(OpenAPI, {
 			method: "GET",
-			url: "/users/me",
+			url: "/api/v1/users/me",
 			errors: {
 				401: "Missing token or inactive user.",
 			},
@@ -153,12 +153,12 @@ export class UsersService {
 	 * @returns UserRead Successful Response
 	 * @throws ApiError
 	 */
-	public static patchCurrentUserUsersMePatch(
-		data: UsersPatchCurrentUserUsersMePatchData,
-	): CancelablePromise<UsersPatchCurrentUserUsersMePatchResponse> {
+	public static patchCurrentUserApiV1UsersMePatch(
+		data: UsersPatchCurrentUserApiV1UsersMePatchData,
+	): CancelablePromise<UsersPatchCurrentUserApiV1UsersMePatchResponse> {
 		return __request(OpenAPI, {
 			method: "PATCH",
-			url: "/users/me",
+			url: "/api/v1/users/me",
 			body: data.requestBody,
 			mediaType: "application/json",
 			errors: {
@@ -176,12 +176,12 @@ export class UsersService {
 	 * @returns UserRead Successful Response
 	 * @throws ApiError
 	 */
-	public static userUsersIdGet(
-		data: UsersUserUsersIdGetData,
-	): CancelablePromise<UsersUserUsersIdGetResponse> {
+	public static userApiV1UsersIdGet(
+		data: UsersUserApiV1UsersIdGetData,
+	): CancelablePromise<UsersUserApiV1UsersIdGetResponse> {
 		return __request(OpenAPI, {
 			method: "GET",
-			url: "/users/{id}",
+			url: "/api/v1/users/{id}",
 			path: {
 				id: data.id,
 			},
@@ -202,12 +202,12 @@ export class UsersService {
 	 * @returns UserRead Successful Response
 	 * @throws ApiError
 	 */
-	public static patchUserUsersIdPatch(
-		data: UsersPatchUserUsersIdPatchData,
-	): CancelablePromise<UsersPatchUserUsersIdPatchResponse> {
+	public static patchUserApiV1UsersIdPatch(
+		data: UsersPatchUserApiV1UsersIdPatchData,
+	): CancelablePromise<UsersPatchUserApiV1UsersIdPatchResponse> {
 		return __request(OpenAPI, {
 			method: "PATCH",
-			url: "/users/{id}",
+			url: "/api/v1/users/{id}",
 			path: {
 				id: data.id,
 			},
@@ -230,12 +230,12 @@ export class UsersService {
 	 * @returns void Successful Response
 	 * @throws ApiError
 	 */
-	public static deleteUserUsersIdDelete(
-		data: UsersDeleteUserUsersIdDeleteData,
-	): CancelablePromise<UsersDeleteUserUsersIdDeleteResponse> {
+	public static deleteUserApiV1UsersIdDelete(
+		data: UsersDeleteUserApiV1UsersIdDeleteData,
+	): CancelablePromise<UsersDeleteUserApiV1UsersIdDeleteResponse> {
 		return __request(OpenAPI, {
 			method: "DELETE",
-			url: "/users/{id}",
+			url: "/api/v1/users/{id}",
 			path: {
 				id: data.id,
 			},

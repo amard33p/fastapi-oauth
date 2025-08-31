@@ -10,7 +10,7 @@ export default function OAuthCallback() {
 		const run = async () => {
 			try {
 				// After backend OAuth callback, we should already have a cookie session.
-				await UsersService.currentUserUsersMeGet();
+				await UsersService.currentUserApiV1UsersMeGet();
 				navigate("/", { replace: true });
 			} catch (e) {
 				setStatus(`Login failed or session not found. ${e?.message || e}`);

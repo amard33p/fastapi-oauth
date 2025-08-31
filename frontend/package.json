@@ -8,7 +8,7 @@
 		"start": "vite",
 		"build": "vite build",
 		"preview": "vite preview --port 5174",
-		"lint": "biome check --apply-unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
+		"lint": "biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true ./",
 		"generate-client": "openapi-ts"
 	},
 	"dependencies": {
@@ -18,7 +18,7 @@
 		"axios": "1.11.0"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
+		"@biomejs/biome": "^2.2.2",
 		"@vitejs/plugin-react": "^4.3.1",
 		"vite": "^5.4.1",
 		"@hey-api/openapi-ts": "^0.80.0"

@@ -8,7 +8,7 @@ export default function Home() {
 	const callProtected = async () => {
 		try {
 			const data =
-				await DefaultService.authenticatedRouteAuthenticatedRouteGet();
+				await DefaultService.authenticatedRouteApiV1AuthenticatedRouteGet();
 			setMessage(typeof data === "string" ? data : JSON.stringify(data));
 		} catch (e) {
 			setMessage(String(e));

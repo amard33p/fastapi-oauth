@@ -15,7 +15,10 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan,
+)
 
 # Allow frontend SPA to call the API during development
 app.add_middleware(
@@ -27,4 +30,4 @@ app.add_middleware(
 )
 
 # Aggregate all sub-routers
-app.include_router(api_router)
+app.include_router(api_router, prefix=settings.API_V1_STR)
